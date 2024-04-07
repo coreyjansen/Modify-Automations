@@ -1,4 +1,4 @@
-# Home Automation Description Generator
+# Home Assistant GPT Title/Description Generator
 
 This Python script leverages OpenAI's GPT models to generate and update titles and descriptions for home automation tasks. It processes an `automations.yaml` file, which contains your home automation configurations, and updates it with newly generated titles and descriptions that are more informative and human-friendly.
 
