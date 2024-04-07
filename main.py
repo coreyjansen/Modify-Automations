@@ -1,10 +1,11 @@
 import yaml
 import json
-from openai import OpenAI
+import openai
+
 
 def generate_description(client, automation, previous_titles):
     """
-    Use GPT-3.5-turbo to generate a new description based on the automation's triggers and actions.
+    Use GPT-4-turbo to generate a new description based on the automation's triggers and actions.
     """
     conversation = [
         {
@@ -18,7 +19,7 @@ def generate_description(client, automation, previous_titles):
         }
     ]
 
-    # Add previous titles as examples
+    # Add previous titles as examples. Feel free to remove this if it is not working as you want but helps keep the titles consistent
     previous_titles_prompt = {
         "role": "system",
         "content": "PREVIOUS TITLES:\n" + "\n".join(previous_titles)
@@ -30,7 +31,7 @@ def generate_description(client, automation, previous_titles):
         "content": f"AUTOMATION CURRENT YAML: {automation}"
     })
 
-    response = client.chat.completions.create(
+    response = client.ChatCompletion.create(
         model="gpt-4-1106-preview",
         messages=conversation,
         response_format={ "type": "json_object" },
@@ -44,7 +45,11 @@ def process_automations(file_path):
     """
     Process the automations.yaml file, updating titles and descriptions.
     """
-    client = OpenAI()
+    #use this if not using an environment variable for openai api key
+    #openai.api_key = 'your_openai_api_key_here'
+
+    client = openai
+
     previous_titles = []
 
     # Load YAML file

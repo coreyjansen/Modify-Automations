@@ -31,10 +31,10 @@ export OPENAI_API_KEY='your_api_key_here'
 1. **Run the Script** : To run the script, navigate to the directory containing the script and your `automations.yaml` file, then execute:
 
 ```bash
-python script_name.py
+python main.py
 ```
 
-Replace `script_name.py` with the name of your Python script file.
+Replace `main.py` with the name of your Python script file.
 
 1. **Review Updates** : The script will process each automation in your YAML file, generating new titles and descriptions, and updating the file in place. Review the changes to ensure they meet your expectations.
 
@@ -48,7 +48,3 @@ Replace `script_name.py` with the name of your Python script file.
 ## Contributions
 
 Contributions are welcome! If you have suggestions for improvements or encounter any issues, please open an issue or submit a pull request.
-
-```vbnet
-Feel free to adjust the guide according to your project's specifics or any additional steps you might require!
-```
