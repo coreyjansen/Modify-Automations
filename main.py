@@ -1,12 +1,13 @@
 import yaml
 import json
-import openai
+from openai import OpenAI
 import os
 import argparse
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-if not openai.api_key:
+if "OPENAI_API_KEY" not in os.environ:
     raise RuntimeError("Set OPENAI_API_KEY env-var before running.")
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 def generate_titles_bulk(client, automations):
@@ -31,11 +32,11 @@ def generate_titles_bulk(client, automations):
         automations, sort_keys=False, allow_unicode=True
     )
 
-    response = client.ChatCompletion.create(
-        model="gpt-4.1",
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",      # or any model you prefer
         messages=[
             {"role": "system", "content": system_msg},
-            {"role": "user", "content": user_msg},
+            {"role": "user",   "content": user_msg},
         ],
         response_format={"type": "json_object"},
         temperature=0.0,
@@ -48,8 +49,6 @@ def process_automations(file_path):
     """
     #use this if not using an environment variable for openai api key
     #openai.api_key = 'your_openai_api_key_here'
-
-    client = openai
 
     # Load YAML file
     with open(file_path, 'r', encoding='utf-8') as file:
