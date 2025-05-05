@@ -52,7 +52,7 @@ def process_automations(file_path):
     client = openai
 
     # Load YAML file
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         automations = yaml.safe_load(file)
 
     # Ask GPT for all titles/descriptions at once
@@ -81,7 +81,7 @@ def process_automations(file_path):
         automation["alias"]       = new_title
         automation["description"] = new_desc
 
-    with open(file_path, "w") as f:
+    with open(file_path, "w", encoding='utf-8') as f:
         yaml.safe_dump(automations, f, sort_keys=False, allow_unicode=True)
 
 # Set your OpenAI API key
