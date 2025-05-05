@@ -85,6 +85,8 @@ def process_automations(file_path):
 
 # Set your OpenAI API key
 
-# Path to your automations.yaml file
-file_path = 'automations.yaml'
-process_automations(file_path)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Retitle HA automations")
+    parser.add_argument("yaml_file", nargs="?", default="automations.yaml")
+    args = parser.parse_args()
+    process_automations(args.yaml_file)
