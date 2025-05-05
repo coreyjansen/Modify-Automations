@@ -32,7 +32,7 @@ def generate_titles_bulk(client, automations):
     )
 
     response = client.ChatCompletion.create(
-        model="gpt-4-1106-preview",
+        model="gpt-4.1",
         messages=[
             {"role": "system", "content": system_msg},
             {"role": "user", "content": user_msg},
