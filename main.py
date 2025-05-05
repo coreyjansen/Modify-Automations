@@ -1,6 +1,12 @@
 import yaml
 import json
 import openai
+import os
+import argparse
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    raise RuntimeError("Set OPENAI_API_KEY env-var before running.")
 
 
 def generate_description(client, automation, previous_titles):
@@ -10,12 +16,13 @@ def generate_description(client, automation, previous_titles):
     conversation = [
         {
             "role": "system",
-            "content": "You are a helpful assistant who generates titles and descriptions for home automation tasks. "
-                       "You will return a json object with the properties title and description. "
-                       "Titles should be formatted with the following schema: "
-                       "'Specific Area / Room of House Automation Takes Place - What Triggers The Automation - What The Automation Does'. "
-                       "If the automation is within a room within a room, mention where in the house that inner room is. "
-                       "For example, the Specific Area / Room of the house should be Front Door Closet"
+            "content": "You are a helpful assistant that returns JSON with two keys: "
+                       "'title' and 'description'. "
+                       "Title must follow exactly this template: "
+                       "'<Room / Area> – <Trigger> – <Action>'. "
+                       "Keep it ≤ 80 characters, title-case every main word, avoid punctuation beside dashes. "
+                       "Description is a one-sentence plain-English summary starting with a verb. "
+                       "Do not invent functionality not present in the YAML. "
         }
     ]
 
@@ -39,6 +46,8 @@ def generate_description(client, automation, previous_titles):
     )
 
     assistant_message = json.loads(response.choices[0].message.content)
+    while assistant_message["title"] in previous_titles:
+        assistant_message["title"] += " (alt)"
     return assistant_message
 
 def process_automations(file_path):
@@ -71,9 +80,8 @@ def process_automations(file_path):
         automation['alias'] = description["title"]
         automation['description'] = description["description"]
 
-        # Save modified YAML file
-        with open(file_path, 'w') as file:
-            yaml.safe_dump(automations, file)
+    with open(file_path, "w") as f:
+        yaml.safe_dump(automations, f, sort_keys=False, allow_unicode=True)
 
 # Set your OpenAI API key
 
