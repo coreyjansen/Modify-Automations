@@ -16,19 +16,19 @@ def generate_description(client, automation, previous_titles):
     conversation = [
         {
             "role": "system",
-            "content": "You are a helpful assistant that returns JSON with two keys: "
+            "content": "You are a helpful assistant analyzing Home Assistant yaml automations for a household, you return JSON with two keys: "
                        "'title' and 'description'. "
-                       "Title must follow exactly this template: "
-                       "'<Room / Area> – <Trigger> – <Action>'. "
+                       "Title must follow exactly this template schema: "
+                       "'[Area] - [Trigger] - [Action] [Optional: - Context]'. "
                        "Keep it ≤ 80 characters, title-case every main word, avoid punctuation beside dashes. "
-                       "Description is a one-sentence plain-English summary starting with a verb. "
-                       "Do not invent functionality not present in the YAML. "
+                       "Description is a one-sentence plain-English summary starting with a verb.  Description schema:  'Purpose, Triggers, Conditions, Actions, Notes'"
+                       "Do not invent functionality not present in the YAML. Triggers, actions and conditions that enabled: false means they are not active."
         }
     ]
 
     # Add previous titles as examples. Feel free to remove this if it is not working as you want but helps keep the titles consistent
     previous_titles_prompt = {
-        "role": "system",
+        "role": "user",
         "content": "PREVIOUS TITLES:\n" + "\n".join(previous_titles)
     }
     conversation.append(previous_titles_prompt)
