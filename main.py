@@ -9,46 +9,38 @@ if not openai.api_key:
     raise RuntimeError("Set OPENAI_API_KEY env-var before running.")
 
 
-def generate_description(client, automation, previous_titles):
+def generate_titles_bulk(client, automations):
     """
-    Use GPT-4-turbo to generate a new description based on the automation's triggers and actions.
+    Send *all* automations in one request and get back a JSON object
+    mapping each automation's `id` (a.k.a. unique_id) to a new
+    { "title": ..., "description": ... } pair.
     """
-    conversation = [
-        {
-            "role": "system",
-            "content": "You are a helpful assistant analyzing Home Assistant yaml automations for a household, you return JSON with two keys: "
-                       "'title' and 'description'. "
-                       "Title must follow exactly this template schema: "
-                       "'[Area] - [Trigger] - [Action] [Optional: - Context]'. "
-                       "Keep it ≤ 80 characters, title-case every main word, avoid punctuation beside dashes. "
-                       "Description is a one-sentence plain-English summary starting with a verb.  Description schema:  'Purpose, Triggers, Conditions, Actions, Notes'"
-                       "Do not invent functionality not present in the YAML. Triggers, actions and conditions that enabled: false means they are not active."
-        }
-    ]
+    system_msg = (
+        "You are a helpful assistant analysing *all* Home-Assistant "
+        "automations for a household.  Return a single JSON object "
+        "whose keys are the automation 'id' values and whose values are "
+        "objects containing exactly two keys: 'title' and 'description'. "
+        "Title template: '[Area] - [Trigger] - [Action] [Optional: - Context]', "
+        "≤80 chars, Title-Case, dash separators only. "
+        "Description: one concise sentence starting with a verb. "
+        "Do NOT invent features not present in the YAML; ignore disabled "
+        "triggers/actions (enabled: false)."
+    )
 
-    # Add previous titles as examples. Feel free to remove this if it is not working as you want but helps keep the titles consistent
-    previous_titles_prompt = {
-        "role": "user",
-        "content": "PREVIOUS TITLES:\n" + "\n".join(previous_titles)
-    }
-    conversation.append(previous_titles_prompt)
-
-    conversation.append({
-        "role": "user",
-        "content": f"AUTOMATION CURRENT YAML: {automation}"
-    })
+    user_msg = "AUTOMATIONS YAML:\n" + yaml.safe_dump(
+        automations, sort_keys=False, allow_unicode=True
+    )
 
     response = client.ChatCompletion.create(
         model="gpt-4-1106-preview",
-        messages=conversation,
-        response_format={ "type": "json_object" },
-        temperature= 0.0
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+        ],
+        response_format={"type": "json_object"},
+        temperature=0.0,
     )
-
-    assistant_message = json.loads(response.choices[0].message.content)
-    while assistant_message["title"] in previous_titles:
-        assistant_message["title"] += " (alt)"
-    return assistant_message
+    return json.loads(response.choices[0].message.content)
 
 def process_automations(file_path):
     """
@@ -59,26 +51,35 @@ def process_automations(file_path):
 
     client = openai
 
-    previous_titles = []
-
     # Load YAML file
     with open(file_path, 'r') as file:
         automations = yaml.safe_load(file)
 
-    # Process each automation
+    # Ask GPT for all titles/descriptions at once
+    mapping = generate_titles_bulk(client, automations)
+    seen_titles = set()
+
     for automation in automations:
-        description = generate_description(client, automation, previous_titles)
-        previous_titles.append(description["title"])
+        uid = automation.get("id")  # Home-Assistant’s unique identifier
+        if uid not in mapping:
+            # skip automations missing an id or unknown to GPT
+            continue
 
-        print("===== PREVIOUS =====")
-        print(automation['alias'])
-        print("===== NEW =====")
-        print(description["title"])
-        print(description["description"])
-        print("")
+        new_title  = mapping[uid]["title"]
+        new_desc   = mapping[uid]["description"]
 
-        automation['alias'] = description["title"]
-        automation['description'] = description["description"]
+        # insure uniqueness in case GPT produced duplicates
+        original_title = new_title
+        counter = 2
+        while new_title in seen_titles:
+            new_title = f"{original_title} ({counter})"
+            counter += 1
+        seen_titles.add(new_title)
+
+        print(f"{automation.get('alias')}  →  {new_title}")
+
+        automation["alias"]       = new_title
+        automation["description"] = new_desc
 
     with open(file_path, "w") as f:
         yaml.safe_dump(automations, f, sort_keys=False, allow_unicode=True)
